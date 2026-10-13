@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tree-Planting Proposals — Quantum Ethic</title>
+<meta name="description" content="Where would trees matter most? Quantum Ethic's tree-planting proposals, ranked by a year of air-quality data from our map, with the honest carbon and air-quality arithmetic.">
+<style>
+  :root{--teal:#066374;--teal-dark:#07262e;--ink:#172126;--muted:#5b6b70;--line:#dde5e7;--bg:#fff;--panel:#f3f7f8}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:0 16px 48px}
+  header{padding:28px 0 10px}
+  h1{margin:0 0 8px;font-size:clamp(26px,3.6vw,38px);line-height:1.12;color:var(--teal-dark)}
+  .lede{font-size:18px;color:var(--muted);max-width:68ch;margin:0}
+  h2{font-size:22px;margin:34px 0 10px;color:var(--teal-dark)}
+  h3{font-size:17px;margin:18px 0 6px}
+  p{margin:10px 0}
+  .small{font-size:14px;color:var(--muted)}
+  a{color:var(--teal)}
+  table{width:100%;border-collapse:collapse;font-size:15px;margin:10px 0}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:13px;font-weight:600;color:#111}
+  .note{background:var(--panel);border-radius:12px;padding:16px 18px;margin:14px 0}
+  .card{border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0}
+  .card h3{margin:0 0 4px;font-size:19px}
+  .card .meta{font-size:14px;color:var(--muted);margin-bottom:8px}
+  .rank{display:inline-block;background:var(--teal);color:#fff;font-weight:700;border-radius:8px;padding:2px 9px;margin-right:8px;font-size:14px}
+  .ask{background:#eef6f7;border-left:4px solid var(--teal);padding:10px 12px;border-radius:6px;margin-top:8px}
+  details{margin:8px 0} summary{cursor:pointer;color:var(--teal);font-weight:600}
+  ol.sources{font-size:14px;color:var(--muted);padding-left:20px} ol.sources li{margin:6px 0}
+  .banner{display:none;margin:12px 0;padding:10px 14px;border-radius:8px;background:#fff4e5;color:#6b3d00;font-size:14px}
+  footer{padding:28px 0 0;color:var(--muted);font-size:14px}
+  @media (max-width:600px){th,td{padding:8px 5px;font-size:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="small" style="margin:0 0 6px"><a href="https://quantumethic.org">← quantumethic.org</a> · <a href="index.html">Air Quality Map</a> · a Quantum Ethic project</p>
+    <h1>Where would trees matter most?</h1>
+    <p class="lede">Tree-planting proposals ranked by a year of air-quality data from our map — with the honest arithmetic on what trees can and cannot do for air and carbon.</p>
+    <p class="small">Quantum Ethic · part of our air-quality project, started summer 2025 · first published October 2026 · the rankings below update automatically whenever the map's history is rebuilt.</p>
+  </header>
+
+  <div class="note">
+    <p><b>In one paragraph.</b> We ranked the communities on our <a href="index.html">Air Quality Map</a> by their modeled fine-particle pollution (PM2.5) over the past year — average level, number of unhealthy days, and the worst day — and read each city's own canopy plans. The cities that combine high PM2.5 with thin canopy are where new trees do the most good, and inside those cities the gain is largest in the lowest-canopy neighborhoods next to the busiest roads. We propose that each priority city direct its next planting cycle there, choose species that don't make ozone worse, and measure the result with a cheap sensor before and after. We also say plainly what trees won't do: at city scale they trim PM2.5 by well under one percent. Their real air-quality value is local — the block, the schoolyard, the bus stop — plus shade, cooler streets, and carbon stored over decades.</p>
+  </div>
+
+  <h2>1. The evidence: a year of PM2.5, community by community</h2>
+  <p>Daily means of modeled PM2.5 from the Copernicus CAMS model via Open-Meteo, for every community on the map, June 2025 to the last rebuild. The EPA's 24-hour threshold for "unhealthy for sensitive groups" is 35.5 µg/m³; its annual standard is 9 µg/m³. Sorted worst first.</p>
+  <div class="banner" id="banner"></div>
+  <table id="rank">
+    <thead><tr><th>#</th><th>Community</th><th class="num">Mean PM2.5</th><th class="num">Days ≥ 35.5</th><th class="num">Days &gt; 9.0</th><th>Worst day</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <p class="small" id="rankNote"></p>
+
+  <h2>2. How we rank</h2>
+  <p>Two things decide where a tree helps most: how bad the air is, and how little canopy there already is. We take the data ranking above as the first cut, then read it against each city's own canopy assessment and planting plan. Where a city's canopy is already high (Atlanta, Washington), the marginal tree matters less for air; where it is thin and the air is bad (Phoenix, Los Angeles, Salt Lake City, Denver, Houston in a typical year), it matters most. Within any city, the right place is the same: the census tracts with the least canopy, adjacent to freeways and major arterials, where both pollution and heat concentrate and where residents tend to have the least say over what gets planted.</p>
+
+  <h2>3. Proposals by city</h2>
+  <p class="small">Ordered by the data ranking above. Each card names the city's existing program — our proposal is addressed to it — and the specific ask.</p>
+  <div id="cards"></div>
+
+  <h2>4. What trees can and cannot do for air</h2>
+  <div class="note">
+    <p><b>The honest number.</b> In the most complete national study, trees and forests removed about 17.4 million tonnes of air pollution across the United States in 2010, but the average improvement in PM2.5 concentration from urban trees was well under one percent — on the order of a quarter of a percent in cities (Nowak et al., 2014). Trees do not fix a city's PM2.5. Wildfire smoke, traffic, and wood burning do that, and only emission cuts undo it.</p>
+    <p><b>Where trees do work.</b> Locally. Leaf area captures particles and a tree line between a road and a sidewalk, schoolyard, or playground measurably lowers exposure right there, where people breathe. Shade cuts surface temperatures by tens of degrees Fahrenheit, which lowers heat deaths and cuts the air-conditioning load, and cooler air forms less ozone. That is why we propose <i>where</i> to plant rather than just <i>how many</i>.</p>
+    <p><b>The ozone caveat.</b> Some species emit large amounts of isoprene and other volatile organics that react in sunlight to form ozone — the summer pollutant that dominates in Salt Lake City, Denver, Phoenix and Los Angeles. High emitters include sweetgum, many oaks, poplars and eucalyptus; low emitters include maples, lindens, elms, hackberry, and many fruit trees. In ozone-limited cities, species choice is part of the air-quality proposal, not landscaping detail.</p>
+  </div>
+
+  <h2>5. The carbon arithmetic</h2>
+  <div class="note">
+    <p>The EPA's greenhouse-gas equivalencies use <b>0.060 metric tons of CO₂ sequestered per urban tree seedling grown for ten years</b>. A mature tree takes up roughly 48 pounds of CO₂ a year. So a 1,000-tree planting stores about 60 tons of CO₂ in its first decade — about what 13 typical passenger cars emit in a year (4.6 t each, EPA) — and more every year after as the trees grow. That is real but small next to a city's emissions. Planting trees does not <i>reduce</i> emissions; it stores some of the carbon that emissions already put in the air, for as long as the tree stands. We say so because an ethics organization should not sell a tree as a tailpipe.</p>
+  </div>
+
+  <h2>6. What we are doing with this</h2>
+  <p>We are submitting the city cards above to the programs they name, with a link to this page and to the map, and we will post each program's response here. We are also adding our volunteers' communities to the map as they report their towns, so the ranking grows past the reference cities. If you run a planting program and want our data for your city, <a href="https://quantumethic.org/contact-us/">write to us</a>.</p>
+
+  <h2>Sources</h2>
+  <ol class="sources">
+    <li>Nowak, D. J., Hirabayashi, S., Bodine, A., &amp; Greenfield, E. (2014). Tree and forest effects on air quality and human health in the United States. <i>Environmental Pollution</i>, 193, 119–129.</li>
+    <li>U.S. EPA. Greenhouse Gas Equivalencies Calculator — Calculations and References (urban tree seedlings; passenger vehicles). <a href="https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator-calculations-and-references" target="_blank" rel="noopener">epa.gov</a></li>
+    <li>U.S. EPA. Air Quality Index (AQI) breakpoints for PM2.5, 2024 revision; National Ambient Air Quality Standards for PM2.5 (annual 9 µg/m³; 24-hour 35 µg/m³). <a href="https://www.epa.gov/pm-pollution" target="_blank" rel="noopener">epa.gov/pm-pollution</a></li>
+    <li>Copernicus Atmosphere Monitoring Service via the Open-Meteo Air Quality API (model data behind the ranking). <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noopener">open-meteo.com</a></li>
+    <li>Urban tree cover for metropolitan areas: Arbor Day Foundation / USDA Forest Service / PlanIT Geo national canopy assessment (2021–2023 imagery), as reported by The Washington Post (2025) — e.g., Phoenix–Mesa 8.5%, New York 27.5%, Washington 39.7%.</li>
+    <li>City canopy plans and programs cited on the cards: Shade Phoenix Plan; City Plants (Los Angeles); Salt Lake City Urban Forest Action Plan; Denver Office of the City Forester and Denver Digs Trees; Resilient Houston and Trees For Houston; Our Roots Chicago; NYC Parks and New York City's canopy goal; the Philly Tree Plan and TreePhilly; Trees for Seattle; Boston's Urban Forest Plan; Casey Trees and Sustainable DC; Million Trees Miami; Minneapolis Park &amp; Recreation Board; Trees Atlanta; Our City Forest (San José). Goals and percentages on the cards are each city's own published figures at time of writing; check the linked program for current numbers.</li>
+    <li>Benjamin, M. T., &amp; Winer, A. M. (1998). Estimating the ozone-forming potential of urban trees and shrubs. <i>Atmospheric Environment</i>, 32(1), 53–68 (species isoprene emissions).</li>
+  </ol>
+
+  <footer><a href="https://quantumethic.org">Quantum Ethic</a> · Science tells us what we can do. Ethics decides what we should. · Written by Quantum Ethic from our data and the sources above.</footer>
+</div>
+
+<script src="places.js"></script>
+<script>
+(function(){
+  // City profiles: program the proposal is addressed to, the city's own stated goal, canopy context, and the ask.
+  var PROFILES={
+    "Phoenix, AZ":{program:"Shade Phoenix Plan (City of Phoenix)",link:"https://www.phoenix.gov/",canopy:"About 8.5% tree cover across the Phoenix–Mesa urban area — among the thinnest of any large US metro; the city's long-standing target is 25%.",ask:"Direct the next planting cycle to the lowest-canopy tracts in south and west Phoenix along the I-17 and I-10 corridors and around schools; choose drought-adapted species from the city's own approved list and avoid high-isoprene emitters such as eucalyptus; pair each corridor with a PM2.5 sensor before and after."},
+    "Los Angeles, CA":{program:"City Plants (City of Los Angeles partnership; free street and yard trees)",link:"https://www.cityplants.org/",canopy:"Roughly a fifth of the city is under canopy, with the sharpest gaps in South and East LA and the San Fernando Valley's industrial corridors.",ask:"Put free-tree outreach and street-tree planting on the blocks within 500 feet of the I-110, I-710 and I-5 freeways in the lowest-canopy council districts; prefer low-isoprene species in this ozone-limited basin; report sensor readings per corridor."},
+    "Salt Lake City, UT":{program:"Urban Forest Action Plan (Salt Lake City) and the mayor's west-side planting pledge",link:"https://www.slc.gov/",canopy:"City data show the east bench with roughly twice the canopy of the west side; the valley's winter inversions trap PM2.5 and summer ozone ranks among the nation's worst.",ask:"Concentrate the 1,000-trees-a-year west-side pledge along the I-15 and I-80 edges of Glendale, Poplar Grove and Rose Park; use low-isoprene species because ozone is the summer problem; publish per-neighborhood canopy each year."},
+    "Denver, CO":{program:"Office of the City Forester (Denver Parks & Recreation) and Denver Digs Trees (The Park People)",link:"https://www.denvergov.org/",canopy:"Denver's canopy is among the lowest of large US cities, concentrated in older, wealthier neighborhoods; the Front Range is an ozone non-attainment area.",ask:"Prioritize free-tree distribution and street planting in Globeville, Elyria-Swansea and Montbello along I-70 and I-25; choose low-isoprene, drought-adapted species; track survival at three years, not just trees planted."},
+    "Houston, TX":{program:"Resilient Houston / Climate Action Plan tree goal and Trees For Houston",link:"https://www.treesforhouston.org/",canopy:"Houston has set a target of 4.6 million new trees by 2030; canopy is uneven, thinnest along the Ship Channel and the east-side industrial corridors where PM2.5 is highest.",ask:"Steer the 4.6-million-tree program's share toward east-side neighborhoods adjacent to the Ship Channel and I-610; use buffer plantings between industry and homes; measure with sensors on both sides of each buffer."},
+    "Chicago, IL":{program:"Our Roots Chicago (City of Chicago; 75,000 trees by 2027)",link:"https://www.chicago.gov/",canopy:"Citywide canopy is modest, with the South and West Sides far below the North Side.",ask:"Weight Our Roots Chicago planting toward the lowest-canopy community areas along the Dan Ryan and Eisenhower expressways; favor native low-isoprene species (hackberry, linden, elm cultivars)."},
+    "New York, NY":{program:"NYC Parks street-tree program (request via 311) and the city's 30%-by-2035 canopy goal",link:"https://www.nycgovparks.org/",canopy:"About 27.5% tree cover across the metro area; the South Bronx and parts of Queens and Brooklyn sit far below the city average.",ask:"Front-load the path to 30% in the South Bronx and along the Cross Bronx and BQE corridors; add tree pits on the truck routes that serve the Hunts Point market; report canopy by community district annually."},
+    "Philadelphia, PA":{program:"Philly Tree Plan (City of Philadelphia) and TreePhilly yard-tree giveaways",link:"https://treephilly.org/",canopy:"Canopy has been shrinking; the Philly Tree Plan's premise is that the lowest-canopy neighborhoods are also the hottest and most polluted.",ask:"Direct yard-tree giveaways and street planting to North and Southwest Philadelphia along I-95 and the Schuylkill Expressway; plant the schoolyard perimeters first."},
+    "Seattle, WA":{program:"Trees for Seattle (City of Seattle; free trees) and the 30%-by-2037 canopy goal",link:"https://www.seattle.gov/trees",canopy:"About 28% canopy citywide, with South Seattle and the Duwamish valley well below the average.",ask:"Prioritize the Duwamish industrial corridor and South Park, where diesel and port traffic concentrate; buffer plantings along the I-5 and SR-99 edges."},
+    "Boston, MA":{program:"Boston Urban Forest Plan (City of Boston)",link:"https://www.boston.gov/",canopy:"About 27% canopy citywide; Chinatown, East Boston and parts of Dorchester and Roxbury are far lower.",ask:"Plant first along the I-93 corridor in Chinatown and the South End and near Logan's East Boston edge; use the plan's equity index to sequence blocks."},
+    "Washington, DC":{program:"Casey Trees and the District's 40%-canopy goal (Sustainable DC)",link:"https://caseytrees.org/",canopy:"Nearly 40% tree cover — among the best of large US metros — but Wards 7 and 8 and the I-295 corridor lag.",ask:"Hold the citywide gain and concentrate new planting east of the Anacostia along I-295 and major bus corridors."},
+    "Miami, FL":{program:"Million Trees Miami (Miami-Dade County; 30% canopy goal)",link:"https://www.miamidade.gov/",canopy:"Canopy is uneven across the county; the lowest-canopy neighborhoods are also the hottest.",ask:"Prioritize Liberty City, Little Haiti and Hialeah along I-95 and the Palmetto; favor hurricane-resilient native species (live oak, gumbo limbo) and shade for bus stops."},
+    "Minneapolis, MN":{program:"Minneapolis Park & Recreation Board forestry",link:"https://www.minneapolisparks.org/",canopy:"Around 30% canopy, but North Minneapolis and the Phillips neighborhoods sit well below the city average and nearest the I-94 and Hiawatha corridors.",ask:"Sequence replacement of ash losses and new planting by the lowest-canopy tracts first, along I-94 in North Minneapolis."},
+    "Atlanta, GA":{program:"Trees Atlanta and the City of Atlanta's tree ordinance",link:"https://www.treesatlanta.org/",canopy:"Atlanta's canopy — close to half the city — is the largest of any major US city; the risk is loss, not absence.",ask:"Protect existing canopy under the tree ordinance and target the thin spots along the Downtown Connector and in Southwest Atlanta rather than adding where cover is already dense."},
+    "San Jose, CA":{program:"Our City Forest (nonprofit; free trees with the City of San José)",link:"https://www.ourcityforest.org/",canopy:"Canopy is modest and lowest in East San José and along the US-101 and I-880 corridors.",ask:"Direct free-tree outreach to East San José blocks along US-101; prefer low-isoprene, drought-adapted species."}
+  };
+  var BP=[[0,9.0,0,50],[9.1,35.4,51,100],[35.5,55.4,101,150],[55.5,125.4,151,200],[125.5,225.4,201,300],[225.5,325.4,301,500]];
+  var CATS=[[50,"Good","#00e400"],[100,"Moderate","#ffff00"],[150,"Unhealthy for sensitive groups","#ff7e00"],[200,"Unhealthy","#ff0000"],[300,"Very unhealthy","#8f3f97"],[Infinity,"Hazardous","#7e0023"]];
+  function pmToAqi(pm){ if(pm==null) return null; var c=Math.round(pm*10)/10; if(c>325.4) return 500; for(var i=0;i<BP.length;i++){ var b=BP[i]; if(c<=b[1]) return Math.round((b[3]-b[2])/(b[1]-b[0])*(c-b[0])+b[2]); } return 500; }
+  function cat(a){ if(a==null) return ["No data","#bbb"]; for(var i=0;i<CATS.length;i++){ if(a<=CATS[i][0]) return [CATS[i][1],CATS[i][2]]; } return ["No data","#bbb"]; }
+  function tc(hex){ return (hex==="#8f3f97"||hex==="#7e0023"||hex==="#ff0000")?"#fff":"#111"; }
+  function fmt(v){ return v==null?"–":(Math.round(v*10)/10); }
+  function stats(p,dates){ var sum=0,n=0,worst=-1,wi=-1,d35=0,d9=0; for(var i=0;i<p.pm.length;i++){ var v=p.pm[i]; if(v==null) continue; sum+=v; n++; if(v>worst){worst=v;wi=i;} if(v>=35.5) d35++; if(v>9.0) d9++; } return n?{mean:sum/n,worst:worst,worstDate:dates[wi],d35:d35,d9:d9}:null; }
+
+  function render(hist){
+    var tb=document.querySelector("#rank tbody"); tb.innerHTML="";
+    var order=[];
+    if(hist){
+      var list=hist.places.map(function(p){return {p:p,s:stats(p,hist.dates)}}).filter(function(x){return x.s}).sort(function(a,b){return (b.s.mean+b.s.d35)-(a.s.mean+a.s.d35)});
+      list.forEach(function(x,i){ var c=cat(pmToAqi(x.s.worst)); var tr=document.createElement("tr"); tr.innerHTML="<td>"+(i+1)+"</td><td>"+x.p.name+(x.p.kind==="volunteer"?" <span class='small'>· volunteer community</span>":"")+"</td><td class='num'>"+fmt(x.s.mean)+"</td><td class='num'>"+x.s.d35+"</td><td class='num'>"+x.s.d9+"</td><td>"+x.s.worstDate+" · "+fmt(x.s.worst)+" µg/m³ <span class='pill' style='background:"+c[1]+";color:"+tc(c[1])+"'>"+c[0]+"</span></td>"; tb.appendChild(tr); order.push(x.p.name); });
+      document.getElementById("rankNote").textContent="Period "+hist.start+" to "+hist.end+" ("+hist.dates.length+" days); history file built "+hist.built.slice(0,10)+". Ranked by mean PM2.5 plus the count of days at or above 35.5 µg/m³.";
+    } else {
+      document.getElementById("banner").textContent="The map's history file hasn't been built yet, so the data ranking is not available on this page right now; the city proposals below are shown in alphabetical order."; document.getElementById("banner").style.display="block";
+      order=Object.keys(PROFILES).sort();
+    }
+    // cards: ranked cities with profiles first, then any remaining profiled cities
+    var seen={}, box=document.getElementById("cards"), rank=0;
+    function card(name,pos){ var pr=PROFILES[name]; if(!pr||seen[name]) return; seen[name]=true; rank++;
+      var el=document.createElement("div"); el.className="card";
+      el.innerHTML="<h3>"+(pos?"<span class='rank'>#"+pos+"</span>":"")+name+"</h3><div class='meta'>Addressed to: <a href='"+pr.link+"' target='_blank' rel='noopener'>"+pr.program+"</a></div><p><b>Canopy context.</b> "+pr.canopy+"</p><div class='ask'><b>Our proposal.</b> "+pr.ask+"</div>";
+      box.appendChild(el); }
+    order.forEach(function(n,i){ card(n, hist?i+1:0); });
+    Object.keys(PROFILES).sort().forEach(function(n){ card(n,0); });
+  }
+  var sc=document.createElement("script"); var d=new Date(); sc.src="history.js?d="+d.getFullYear()+(d.getMonth()+1)+d.getDate();
+  sc.onload=function(){ render(window.QE_HISTORY&&window.QE_HISTORY.dates?window.QE_HISTORY:null); };
+  sc.onerror=function(){ render(null); };
+  document.body.appendChild(sc);
+})();
+</script>
+</body>
+</html>

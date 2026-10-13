@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build history.js — Quantum Ethic Air Quality Map</title>
+<style>
+  body{margin:0;font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#172126;background:#fff}
+  .wrap{max-width:760px;margin:0 auto;padding:32px 16px}
+  h1{font-size:26px;color:#07262e;margin:0 0 8px}
+  p{margin:8px 0}
+  button{padding:10px 16px;border:0;border-radius:8px;background:#066374;color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .bar{height:12px;background:#e6eef0;border-radius:6px;overflow:hidden;margin:14px 0}
+  .bar i{display:block;height:100%;width:0;background:#066374;transition:width .2s}
+  pre{background:#f3f7f8;padding:12px;border-radius:8px;font-size:13px;white-space:pre-wrap;max-height:240px;overflow:auto}
+  .ok{color:#0a6b2d;font-weight:600}
+  .err{color:#a11;font-weight:600}
+  label{display:inline-block;margin-right:14px}
+  input[type=date]{padding:6px;border:1px solid #dde5e7;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Build history.js</h1>
+  <p>This page downloads modeled hourly PM2.5 for every grid square and every community on the map, averages it into daily values, and saves the result as <b>history.js</b>. Open it once, click Build, wait a minute or two, then upload the downloaded file into the same folder as <code>index.html</code>. Re-run it whenever you want the history extended to today.</p>
+  <p>
+    <label>Start <input type="date" id="start" value="2025-06-01"></label>
+    <label>End <input type="date" id="end"></label>
+  </p>
+  <p><label>Save token <input type="password" id="token" placeholder="paste the token to save directly to the site" style="width:320px;padding:6px;border:1px solid #dde5e7;border-radius:6px"></label></p>
+  <p><button id="go">Build history.js</button> <span id="summary"></span></p>
+  <p class="small" style="color:#5b6b70;font-size:14px">With the token filled in, the result is written straight to <code>history.js</code> on the site. With it blank, the file downloads and you upload it yourself.</p>
+  <div class="bar"><i id="fill"></i></div>
+  <pre id="log"></pre>
+</div>
+<script src="places.js"></script>
+<script>
+(function(){
+  var API="https://air-quality-api.open-meteo.com/v1/air-quality";
+  var log=document.getElementById("log"), fill=document.getElementById("fill"), go=document.getElementById("go"), summary=document.getElementById("summary");
+  var y=new Date(Date.now()-86400000); document.getElementById("end").value=y.toISOString().slice(0,10);
+  function say(s,cls){ var l=document.createElement("div"); if(cls) l.className=cls; l.textContent=s; log.appendChild(l); log.scrollTop=log.scrollHeight; }
+  function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+  // history grid: 4-degree cells over land (uses the 2-degree land mask rows)
+  function gridPoints(){
+    var pts=[]; for(var la=27;la<=47;la+=4){ var rows=(window.QE_LAND[la]||[]); for(var lo=-122;lo<=-70;lo+=4){ if(rows.some(function(r){return lo>=r[0]&&lo<=r[1]})) pts.push([la,lo]); } } return pts;
+  }
+  function dailyMeans(hourly, dates){
+    var sums={}, counts={};
+    for(var i=0;i<hourly.time.length;i++){ var v=hourly.pm2_5[i]; if(v==null) continue; var d=hourly.time[i].slice(0,10); sums[d]=(sums[d]||0)+v; counts[d]=(counts[d]||0)+1; }
+    return dates.map(function(d){ return counts[d]?Math.round(sums[d]/counts[d]*10)/10:null; });
+  }
+  function dateList(start,end){ var out=[], d=new Date(start+"T00:00:00Z"), e=new Date(end+"T00:00:00Z"); while(d<=e){ out.push(d.toISOString().slice(0,10)); d=new Date(d.getTime()+86400000); } return out; }
+  async function fetchOne(lat,lon,start,end){
+    var url=API+"?latitude="+lat+"&longitude="+lon+"&hourly=pm2_5&start_date="+start+"&end_date="+end+"&timezone=UTC";
+    for(var attempt=0;attempt<8;attempt++){
+      var r=await fetch(url);
+      if(r.status===429){ say("Rate limited by the data service — waiting 30 s, then continuing…"); await sleep(30000); continue; }
+      if(!r.ok){ var t=await r.text(); throw new Error("API "+r.status+": "+t.slice(0,160)); }
+      return r.json();
+    }
+    throw new Error("rate limited repeatedly");
+  }
+
+  go.addEventListener("click", async function(){
+    go.disabled=true; log.textContent="";
+    var start=document.getElementById("start").value, end=document.getElementById("end").value;
+    var dates=dateList(start,end);
+    var grid=gridPoints();
+    var places=(window.QE_PLACES.volunteer||[]).map(function(p){return {name:p[0],lat:p[1],lon:p[2],kind:"volunteer"}})
+      .concat((window.QE_PLACES.reference||[]).map(function(p){return {name:p[0],lat:p[1],lon:p[2],kind:"reference"}}));
+    var total=grid.length+places.length, done=0, out={built:new Date().toISOString(),start:start,end:end,dates:dates,grid:[],places:[]};
+    say("Range "+start+" → "+end+" ("+dates.length+" days). "+grid.length+" grid squares + "+places.length+" communities.");
+    try{
+      // probe the date range once; if the archive doesn't reach back that far, the API tells us
+      for(var i=0;i<grid.length;i++){
+        var g=grid[i]; var j=await fetchOne(g[0],g[1],start,end);
+        out.grid.push({lat:g[0],lon:g[1],pm:dailyMeans(j.hourly,dates)}); done++; fill.style.width=(done/total*100)+"%";
+        if(i%10===0) say("grid "+(i+1)+"/"+grid.length);
+        await sleep(400);
+      }
+      for(var k=0;k<places.length;k++){
+        var p=places[k]; var jj=await fetchOne(p.lat,p.lon,start,end);
+        out.places.push({name:p.name,lat:p.lat,lon:p.lon,kind:p.kind,pm:dailyMeans(jj.hourly,dates)}); done++; fill.style.width=(done/total*100)+"%";
+        say(p.name); await sleep(400);
+      }
+      // drop leading days with no data anywhere (archive start), so the slider starts where data starts
+      var first=0; while(first<dates.length && out.grid.every(function(g){return g.pm[first]==null}) && out.places.every(function(p){return p.pm[first]==null})) first++;
+      if(first>0){ out.dates=dates.slice(first); out.grid.forEach(function(g){g.pm=g.pm.slice(first)}); out.places.forEach(function(p){p.pm=p.pm.slice(first)}); out.start=out.dates[0]; say("Archive starts "+out.start+"; trimmed "+first+" empty days."); }
+      var token=document.getElementById("token").value.trim();
+      if(token){
+        say("Saving to the site…");
+        var resp=await fetch("save-history.php",{method:"POST",headers:{"Content-Type":"application/json","X-QE-Token":token},body:JSON.stringify(out)});
+        var res=null; try{ res=await resp.json(); }catch(e){}
+        if(resp.ok&&res&&res.ok){ summary.innerHTML="<span class='ok'>Done — saved to the site: "+res.days+" days, "+out.start+" to "+out.end+". Open the map and click History.</span>"; say("DONE — saved to server ("+Math.round(res.bytes/1024)+" KB).","ok"); }
+        else { summary.innerHTML="<span class='err'>Build finished but saving failed: "+((res&&res.error)||("HTTP "+resp.status))+". Downloading the file instead.</span>"; say("Save failed: "+((res&&res.error)||resp.status),"err"); token=""; }
+      }
+      if(!token){
+        var blob=new Blob(["window.QE_HISTORY="+JSON.stringify(out)+";"],{type:"application/javascript"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="history.js"; document.body.appendChild(a); a.click();
+        if(!summary.innerHTML) summary.innerHTML="<span class='ok'>Done — history.js downloaded ("+Math.round(blob.size/1024)+" KB). Upload it next to index.html.</span>";
+        say("DONE — history.js downloaded.", "ok");
+      }
+    }catch(e){ say("Failed: "+e.message, "err"); summary.innerHTML="<span class='err'>Failed — see log. If the message says the date is out of range, move Start later and try again.</span>"; }
+    go.disabled=false;
+  });
+})();
+</script>
+</body>
+</html>

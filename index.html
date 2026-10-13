@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Air Quality Map — Quantum Ethic</title>
+<meta name="description" content="A live map of modeled air quality across the United States and the communities of Quantum Ethic's volunteers, with daily history since summer 2025, built from public Copernicus/Open-Meteo data.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{--teal:#066374;--teal-dark:#07262e;--ink:#172126;--muted:#5b6b70;--line:#dde5e7;--bg:#ffffff;--panel:#f3f7f8;
+        --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#6250d6}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+  header{padding:28px 0 14px}
+  header h1{margin:0 0 6px;font-size:clamp(24px,3.4vw,34px);line-height:1.15;color:var(--teal-dark)}
+  header p{margin:0;color:var(--muted);max-width:70ch}
+  .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:14px 0 10px}
+  .status{font-size:14px;color:var(--muted)} .status b{color:var(--ink)}
+  form{display:flex;gap:8px;flex-wrap:wrap}
+  input[type=text]{flex:1 1 220px;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:8px;font-size:15px}
+  button{padding:10px 14px;border:0;border-radius:8px;background:var(--teal);color:#fff;font-weight:600;font-size:15px;cursor:pointer}
+  button:disabled{opacity:.6;cursor:default}
+  .modes{display:flex;gap:6px;margin:0 0 10px}
+  .modes button{background:#e6eef0;color:var(--teal-dark)} .modes button.on{background:var(--teal);color:#fff}
+  #map{height:62vh;min-height:380px;border-radius:12px;border:1px solid var(--line)}
+  #map .leaflet-tile-pane{filter:grayscale(1) brightness(1.06) contrast(.92)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:12px 0 6px;font-size:13px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:14px;height:14px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+  .banner{display:none;margin:12px 0;padding:10px 14px;border-radius:8px;background:#fff4e5;color:#6b3d00;font-size:14px}
+  h2{font-size:20px;margin:30px 0 10px;color:var(--teal-dark)}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  .pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:13px;font-weight:600;color:#111}
+  .note{background:var(--panel);border-radius:12px;padding:16px 18px;margin:14px 0} .note p{margin:8px 0}
+  .small{font-size:14px;color:var(--muted)}
+  footer{padding:28px 0 40px;color:var(--muted);font-size:14px}
+  a{color:var(--teal)}
+  .x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:0;font-weight:400}
+  /* history */
+  #history{display:none}
+  .slider{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
+  .slider input[type=range]{flex:1;accent-color:var(--teal)}
+  .slider b{min-width:120px;font-variant-numeric:tabular-nums}
+  .chartwrap{position:relative;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 6px 4px;margin:10px 0}
+  svg.chart{width:100%;height:320px;display:block;overflow:visible}
+  .tip{position:absolute;pointer-events:none;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:13px;box-shadow:0 2px 10px rgba(0,0,0,.08);display:none;min-width:160px}
+  .tip b{display:block;margin-bottom:4px}
+  .tip span{display:flex;justify-content:space-between;gap:12px}
+  .picks{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;margin:6px 0}
+  .picks label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .picks i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .sw{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle}
+  @media (max-width:600px){#map{height:70vh}th,td{padding:8px 5px;font-size:14px}svg.chart{height:260px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="small" style="margin:0 0 6px"><a href="https://quantumethic.org">← quantumethic.org</a> · a Quantum Ethic project · <a href="proposals.html">Tree-planting proposals →</a></p>
+    <h1>Air Quality Map</h1>
+    <p>Air quality across the United States from two sources — a global atmosphere model and the EPA's monitor network — live right now, and day by day since summer 2025. Add any town to see its numbers.</p>
+  </header>
+
+  <div class="bar">
+    <div class="status" id="status">Loading live data…</div>
+    <form id="addForm" autocomplete="off">
+      <input type="text" id="townInput" placeholder="Add a town (e.g. Ithaca, NY)" aria-label="Add a town">
+      <button type="submit" id="addBtn">Add</button>
+    </form>
+  </div>
+  <div class="banner" id="banner"></div>
+
+  <div class="modes" id="modes">
+    <button type="button" id="modeLive" class="on">Live now</button>
+    <button type="button" id="modeHist" disabled title="Loading history…">History</button>
+  </div>
+  <div id="map" role="region" aria-label="Air quality map"></div>
+  <div class="slider" id="sliderRow" style="display:none">
+    <input type="range" id="daySlider" min="0" max="0" value="0" aria-label="Day">
+    <b id="dayLabel"></b>
+  </div>
+
+  <div class="legend" id="legend"></div>
+  <p class="small" id="gridNote">Grid squares show the modeled <b>US AQI</b> for each area. Circles are communities; click one for the numbers.</p>
+  <p class="small" id="monNote" style="display:none"><label style="cursor:pointer"><input type="checkbox" id="monToggle" checked> Show <b>EPA AirNow monitors</b> (<span id="monCount">0</span> sites, small dots) — actual sensor readings, a second source independent of the model.</label></p>
+
+  <h2 id="liveHead">Communities right now, worst air first</h2>
+  <table id="table">
+    <thead><tr><th>Place</th><th>Category (model)</th><th class="num">US AQI</th><th class="num">PM2.5 µg/m³</th><th class="num">PM10</th><th class="num">O₃</th><th class="num">NO₂</th><th class="num">Nearest EPA monitor<br><span style="text-transform:none;letter-spacing:0">PM2.5 AQI (sensor)</span></th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <p class="small" id="volNote">Volunteer communities are being added as volunteers report their towns; the reference cities are shown in the meantime. Towns you add yourself are saved in your own browser only.</p>
+
+  <div id="history">
+    <h2 id="histHead">Since summer 2025: daily PM2.5 by community</h2>
+    <p class="small">Daily mean of modeled PM2.5. Tick the communities to compare (up to six). Hover or touch the chart for the values on any day.</p>
+    <div class="picks" id="picks"></div>
+    <div class="chartwrap"><svg class="chart" id="chart" role="img" aria-label="Daily PM2.5 line chart"></svg><div class="tip" id="tip"></div></div>
+    <h2>Over the whole period, worst air first</h2>
+    <table id="histTable">
+      <thead><tr><th>Place</th><th class="num">Mean PM2.5</th><th class="num">Days over 35.5<br><span style="text-transform:none;letter-spacing:0">(EPA 24-h “unhealthy for sensitive groups”)</span></th><th class="num">Days over 9.0<br><span style="text-transform:none;letter-spacing:0">(EPA annual standard)</span></th><th>Worst day</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="small" id="histNote"></p>
+    <p><a href="proposals.html"><b>Read the tree-planting proposals built on this ranking →</b></a></p>
+  </div>
+
+  <h2>How to read it</h2>
+  <div class="note">
+    <p><b>US AQI</b> is the EPA's 0–500 scale. Under 50 is good; 51–100 is moderate; 101–150 is unhealthy for sensitive groups (asthma, heart or lung disease, children, older adults); above 150 is unhealthy for everyone. The live AQI is the worst of the pollutants at that hour; the historical AQI is computed from each day's mean PM2.5 using the EPA's breakpoints, the same way the official daily PM2.5 AQI is calculated.</p>
+    <p><b>PM2.5</b> is fine particulate matter under 2.5 micrometers — small enough to pass from the lungs into the blood. It is the pollutant most tightly linked to health effects, and the one wildfire smoke, traffic and wood burning produce. The EPA's annual standard is 9 µg/m³ and its 24-hour standard is 35 µg/m³; the WHO guideline is 5.</p>
+  </div>
+
+  <h2>Methods and limitations</h2>
+  <div class="note">
+    <p><b>Two sources.</b> The grid, the community values and the history come from the <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noopener">Open-Meteo Air Quality API</a>, which serves hourly output from the Copernicus Atmosphere Monitoring Service (CAMS) global model — a <i>model</i>, estimating air quality everywhere, including places with no sensor. The small dots are <a href="https://www.airnow.gov" target="_blank" rel="noopener">EPA AirNow</a> monitors — <i>sensors</i>, reporting what was actually measured at that site in the last hour, fetched through our server every 15 minutes. Where a community has a monitor within 60 km, the table shows both side by side; when they disagree, the sensor is the ground truth and the gap is the model's error at that moment.</p>
+    <p><b>The model's limits.</b> Its grid is tens of kilometers across, so it cannot see a highway, a wildfire plume's edge, or one neighborhood versus the next. Monitors are sparse outside cities. This map is for seeing patterns at the scale of regions and towns, and for comparing places on the same basis at the same hour or day. The history view uses a file we build from the model — hourly PM2.5 for every grid square and community, averaged into daily values — and rebuild as the record grows; the date range it covers is printed above the chart. For community sensors near you, see the <a href="https://map.purpleair.com" target="_blank" rel="noopener">PurpleAir map</a>.</p>
+    <p><b>Grids.</b> The live view samples a 2° × 2° grid (about 140 miles across) at each square's center; the history view uses a 4° grid so the file stays small. Both are coarse by design — fine enough to show a smoke event or a stagnant basin, coarse enough to stay honest about what a global model can resolve.</p>
+    <p><b>Who built it.</b> Quantum Ethic. We started this project in summer 2025, and the map has been running live since 2026. The pages are plain files with no tracking and no accounts. The written part of this project — <a href="proposals.html">Where would trees matter most?</a> — ranks these communities by this history and proposes where each city should plant next, with the honest arithmetic on what trees do for air and carbon.</p>
+  </div>
+
+  <footer>
+    <a href="https://quantumethic.org">Quantum Ethic</a> · Science tells us what we can do. Ethics decides what we should. · Map tiles © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors.
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="places.js"></script>
+<script>
+(function(){
+  var API="https://air-quality-api.open-meteo.com/v1/air-quality", GEO="https://geocoding-api.open-meteo.com/v1/search", VARS="us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide";
+  var PLACES=window.QE_PLACES||{volunteer:[],reference:[]}, LAND=window.QE_LAND||{};
+
+  // ---- AQI categories (EPA colors) and PM2.5 -> AQI (EPA 2024 breakpoints) ----
+  var CATS=[[50,"Good","#00e400"],[100,"Moderate","#ffff00"],[150,"Unhealthy for sensitive groups","#ff7e00"],[200,"Unhealthy","#ff0000"],[300,"Very unhealthy","#8f3f97"],[Infinity,"Hazardous","#7e0023"]];
+  function cat(aqi){ if(aqi==null||isNaN(aqi)) return ["No data","#bbbbbb"]; for(var i=0;i<CATS.length;i++){ if(aqi<=CATS[i][0]) return [CATS[i][1],CATS[i][2]]; } return ["No data","#bbbbbb"]; }
+  function textColor(hex){ return (hex==="#8f3f97"||hex==="#7e0023"||hex==="#ff0000")?"#fff":"#111"; }
+  var BP=[[0,9.0,0,50],[9.1,35.4,51,100],[35.5,55.4,101,150],[55.5,125.4,151,200],[125.5,225.4,201,300],[225.5,325.4,301,500]];
+  function pmToAqi(pm){ if(pm==null) return null; var c=Math.round(pm*10)/10; if(c>325.4) return 500; for(var i=0;i<BP.length;i++){ var b=BP[i]; if(c<=b[1]) return Math.round((b[3]-b[2])/(b[1]-b[0])*(c-b[0])+b[2]); } return 500; }
+  function fmt(v){ return v==null?"–":(Math.round(v*10)/10); }
+
+  // ---- Map ------------------------------------------------------------------
+  var map=L.map("map",{scrollWheelZoom:false}).setView([38.5,-96.5],4);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© <a href='https://www.openstreetmap.org/copyright' target='_blank' rel='noopener'>OpenStreetMap</a> contributors"}).addTo(map);
+  var liveGrid=L.layerGroup().addTo(map), histGrid=L.layerGroup(), placeLayer=L.layerGroup().addTo(map);
+  var legend=document.getElementById("legend");
+  CATS.forEach(function(c,i){ var lo=i?CATS[i-1][0]+1:0, hi=c[0]===Infinity?"+":"–"+c[0]; legend.insertAdjacentHTML("beforeend","<span><i style='background:"+c[2]+"'></i>"+c[1]+" ("+lo+hi+")</span>"); });
+  var statusEl=document.getElementById("status"), banner=document.getElementById("banner");
+  function warn(msg){ banner.textContent=msg; banner.style.display="block"; }
+
+  function fetchAQ(points){
+    var lat=points.map(function(p){return p[0].toFixed(3)}).join(","), lon=points.map(function(p){return p[1].toFixed(3)}).join(",");
+    return fetch(API+"?latitude="+lat+"&longitude="+lon+"&current="+VARS+"&timezone=auto").then(function(r){ if(!r.ok) throw new Error("API "+r.status); return r.json(); }).then(function(j){ return Array.isArray(j)?j:[j]; });
+  }
+  function fetchAQRetry(points,tries){ tries=tries||0; return fetchAQ(points).catch(function(e){ if(tries>=3) throw e; return new Promise(function(r){ setTimeout(r,2000*(tries+1)); }).then(function(){ return fetchAQRetry(points,tries+1); }); }); }
+  function chunk(arr,n){ var out=[]; for(var i=0;i<arr.length;i+=n) out.push(arr.slice(i,i+n)); return out; }
+  function cell(latc,lonc,half,col,op,layer){ L.rectangle([[latc-half,lonc-half],[latc+half,lonc+half]],{color:col,weight:0,fillColor:col,fillOpacity:op,interactive:false}).addTo(layer); }
+
+  function drawLiveGrid(){
+    var pts=[]; for(var la=25;la<=49;la+=2){ for(var lo=-124;lo<=-66;lo+=2){ if((LAND[la]||[]).some(function(r){return lo>=r[0]&&lo<=r[1]})) pts.push([la,lo]); } }
+    // one request at a time: the data service rejects bursts of parallel multi-location requests
+    var groups=chunk(pts,40), gi=0;
+    function next(){ if(gi>=groups.length) return Promise.resolve(); var g=groups[gi++];
+      return fetchAQRetry(g).then(function(res){ res.forEach(function(r,i){ var a=r.current&&r.current.us_aqi; if(a==null) return; cell(g[i][0],g[i][1],1,cat(a)[1],0.28,liveGrid); }); }).then(next); }
+    return next();
+  }
+
+  // ---- Places (live) --------------------------------------------------------
+  var rows=[]; var mode="live"; var hist=null; var dayIdx=0; var monNote="";
+  function kindLabel(k){ return k==="volunteer"?"Volunteer community":(k==="user"?"Added by you":"Reference city"); }
+  function popupHtml(r){
+    if(mode==="hist"&&hist){ var h=histFor(r); var pm=h?h.pm[dayIdx]:null, a=pmToAqi(pm), c=cat(a);
+      return "<b>"+r.name+"</b><br>"+hist.dates[dayIdx]+"<br><span class='pill' style='background:"+c[1]+";color:"+textColor(c[1])+"'>AQI "+(a==null?"–":a)+" · "+c[0]+"</span><br>Daily mean PM2.5 "+fmt(pm)+" µg/m³<br><span class='small'>"+kindLabel(r.kind)+"</span>"; }
+    var d=r.data||{}, cc=cat(d.us_aqi); var nm=(typeof nearestMonitor==="function")?nearestMonitor(r.lat,r.lon):null;
+    var monLine=(nm&&nm.km<60)?"<br><span class='small'>Nearest EPA monitor: "+(nm.m.name||"site")+" ("+Math.round(nm.km)+" km) — PM2.5 AQI "+nm.m.pm25+"</span>":"";
+    return "<b>"+r.name+"</b><br><span class='pill' style='background:"+cc[1]+";color:"+textColor(cc[1])+"'>US AQI "+(d.us_aqi==null?"–":Math.round(d.us_aqi))+" · "+cc[0]+"</span><br>PM2.5 "+fmt(d.pm2_5)+" µg/m³ · PM10 "+fmt(d.pm10)+"<br>Ozone "+fmt(d.ozone)+" · NO₂ "+fmt(d.nitrogen_dioxide)+monLine+"<br><span class='small'>"+kindLabel(r.kind)+" · model value</span>";
+  }
+  function markerColor(r){ if(mode==="hist"&&hist){ var h=histFor(r); return cat(h?pmToAqi(h.pm[dayIdx]):null)[1]; } return cat((r.data||{}).us_aqi)[1]; }
+  function drawPlaces(){
+    placeLayer.clearLayers();
+    rows.forEach(function(r){ L.circleMarker([r.lat,r.lon],{radius:r.kind==="reference"?7:9,color:"#222",weight:1.2,fillColor:markerColor(r),fillOpacity:0.95}).bindPopup(function(){return popupHtml(r)}).addTo(placeLayer); });
+    renderTable();
+  }
+  function renderTable(){
+    var tb=document.querySelector("#table tbody"); tb.innerHTML="";
+    rows.slice().sort(function(a,b){ return ((b.data||{}).us_aqi||-1)-((a.data||{}).us_aqi||-1); }).forEach(function(r){
+      var d=r.data||{}, c=cat(d.us_aqi), tr=document.createElement("tr");
+      tr.innerHTML="<td>"+r.name+"<br><span class='small'>"+kindLabel(r.kind).toLowerCase()+"</span></td><td><span class='pill' style='background:"+c[1]+";color:"+textColor(c[1])+"'>"+c[0]+"</span></td>"+
+        "<td class='num'>"+(d.us_aqi==null?"–":Math.round(d.us_aqi))+"</td><td class='num'>"+fmt(d.pm2_5)+"</td><td class='num'>"+fmt(d.pm10)+"</td><td class='num'>"+fmt(d.ozone)+"</td><td class='num'>"+fmt(d.nitrogen_dioxide)+"</td>"+
+        "<td class='num'>"+(function(){ var nm=(typeof nearestMonitor==="function")?nearestMonitor(r.lat,r.lon):null; if(!nm||nm.km>60) return "<span class='small'>–</span>"; var c2=cat(nm.m.pm25); return "<span class='pill' style='background:"+c2[1]+";color:"+textColor(c2[1])+"'>"+nm.m.pm25+"</span><br><span class='small'>"+Math.round(nm.km)+" km</span>"; })()+"</td>"+
+        "<td>"+(r.kind==="user"?"<button class='x' data-name='"+r.name.replace(/'/g,"&#39;")+"'>remove</button>":"")+"</td>";
+      tb.appendChild(tr);
+    });
+    document.getElementById("volNote").style.display=(PLACES.volunteer||[]).length?"none":"block";
+  }
+  function loadPlaces(list){
+    if(!list.length) return Promise.resolve();
+    return fetchAQRetry(list.map(function(r){return [r.lat,r.lon]})).then(function(res){ res.forEach(function(r,i){ list[i].data=r.current||{}; if(i===0&&r.current&&r.current.time) statusEl.innerHTML="Live · model hour <b>"+r.current.time.replace("T"," ")+"</b> · source: Copernicus CAMS via Open-Meteo"+monNote; }); });
+  }
+  function userTowns(){ try{ return JSON.parse(localStorage.getItem("qe_aq_towns")||"[]"); }catch(e){ return []; } }
+  function saveUserTowns(t){ try{ localStorage.setItem("qe_aq_towns",JSON.stringify(t)); }catch(e){} }
+  var STATES={"al":"alabama","ak":"alaska","az":"arizona","ar":"arkansas","ca":"california","co":"colorado","ct":"connecticut","de":"delaware","fl":"florida","ga":"georgia","hi":"hawaii","id":"idaho","il":"illinois","in":"indiana","ia":"iowa","ks":"kansas","ky":"kentucky","la":"louisiana","me":"maine","md":"maryland","ma":"massachusetts","mi":"michigan","mn":"minnesota","ms":"mississippi","mo":"missouri","mt":"montana","ne":"nebraska","nv":"nevada","nh":"new hampshire","nj":"new jersey","nm":"new mexico","ny":"new york","nc":"north carolina","nd":"north dakota","oh":"ohio","ok":"oklahoma","or":"oregon","pa":"pennsylvania","ri":"rhode island","sc":"south carolina","sd":"south dakota","tn":"tennessee","tx":"texas","ut":"utah","vt":"vermont","va":"virginia","wa":"washington","wv":"west virginia","wi":"wisconsin","wy":"wyoming","dc":"district of columbia"};
+  var addForm=document.getElementById("addForm"), addBtn=document.getElementById("addBtn"), townInput=document.getElementById("townInput");
+  addForm.addEventListener("submit",function(e){
+    e.preventDefault(); var q=townInput.value.trim(); if(!q) return; addBtn.disabled=true;
+    fetch(GEO+"?name="+encodeURIComponent(q.split(",")[0])+"&count=8&language=en&format=json").then(function(r){return r.json()}).then(function(j){
+      var res=(j.results||[]); if(!res.length) throw new Error("not found");
+      var want=(q.split(",")[1]||"").trim().toLowerCase(), pick=res[0];
+      if(want){ for(var i=0;i<res.length;i++){ var a=(res[i].admin1||"").toLowerCase(), cc=(res[i].country_code||"").toLowerCase(); if(a===want||a.indexOf(want)===0||cc===want||STATES[want]===a){ pick=res[i]; break; } } }
+      var name=pick.name+(pick.admin1?", "+pick.admin1:"")+(pick.country_code&&pick.country_code!=="US"?" ("+pick.country_code+")":"");
+      if(rows.some(function(r){return r.name===name})) throw new Error("already on the map");
+      var row={name:name,lat:pick.latitude,lon:pick.longitude,kind:"user"};
+      return loadPlaces([row]).then(function(){ rows.push(row); var t=userTowns(); t.push({name:name,lat:row.lat,lon:row.lon}); saveUserTowns(t); drawPlaces(); map.setView([row.lat,row.lon],7); townInput.value=""; });
+    }).catch(function(err){ warn("Couldn't add \""+q+"\": "+(err.message||"try 'Town, State'")); }).then(function(){ addBtn.disabled=false; });
+  });
+  document.querySelector("#table tbody").addEventListener("click",function(e){ var b=e.target.closest("button.x"); if(!b) return; var n=b.getAttribute("data-name"); rows=rows.filter(function(r){return !(r.kind==="user"&&r.name===n)}); saveUserTowns(userTowns().filter(function(t){return t.name!==n})); drawPlaces(); });
+
+  // ---- History --------------------------------------------------------------
+  var SERIES=["#2a78d6","#eb6834","#1baf7a","#eda100","#e87ba4","#6250d6"]; var picked=[]; var histCells=[];
+  function histFor(r){ if(!hist) return null; for(var i=0;i<hist.places.length;i++){ var p=hist.places[i]; if(p.name===r.name||(Math.abs(p.lat-r.lat)<0.01&&Math.abs(p.lon-r.lon)<0.01)) return p; } return null; }
+  function setMode(m){
+    mode=m; document.getElementById("modeLive").classList.toggle("on",m==="live"); document.getElementById("modeHist").classList.toggle("on",m==="hist");
+    document.getElementById("sliderRow").style.display=(m==="hist")?"flex":"none";
+    if(m==="hist"){ map.removeLayer(liveGrid); map.removeLayer(monLayer); histGrid.addTo(map); drawHistGrid(); document.getElementById("gridNote").innerHTML="Grid squares show the <b>AQI from each day's mean PM2.5</b> (4° grid). Circles are communities; click one for that day's value."; }
+    else { map.removeLayer(histGrid); liveGrid.addTo(map); if(document.getElementById("monToggle").checked) monLayer.addTo(map); document.getElementById("gridNote").innerHTML="Grid squares show the modeled <b>US AQI</b> for each area. Circles are communities; click one for the numbers."; }
+    drawPlaces();
+  }
+  function drawHistGrid(){
+    histGrid.clearLayers(); if(!hist) return;
+    hist.grid.forEach(function(g){ var a=pmToAqi(g.pm[dayIdx]); if(a==null) return; cell(g.lat,g.lon,2,cat(a)[1],0.28,histGrid); });
+    document.getElementById("dayLabel").textContent=hist.dates[dayIdx];
+  }
+  function stats(p){ var vals=p.pm.filter(function(v){return v!=null}); if(!vals.length) return null; var sum=0,worst=-1,wi=-1,d35=0,d9=0; for(var i=0;i<p.pm.length;i++){ var v=p.pm[i]; if(v==null) continue; sum+=v; if(v>worst){worst=v;wi=i;} if(v>=35.5) d35++; if(v>9.0) d9++; } return {mean:sum/vals.length,worst:worst,worstDate:hist.dates[wi],d35:d35,d9:d9,n:vals.length}; }
+  function renderHistTable(){
+    var tb=document.querySelector("#histTable tbody"); tb.innerHTML="";
+    var list=hist.places.map(function(p){ return {p:p,s:stats(p)}; }).filter(function(x){return x.s}).sort(function(a,b){ return b.s.mean-a.s.mean; });
+    list.forEach(function(x){ var c=cat(pmToAqi(x.s.worst)); var tr=document.createElement("tr"); tr.innerHTML="<td>"+x.p.name+"<br><span class='small'>"+kindLabel(x.p.kind).toLowerCase()+"</span></td><td class='num'>"+fmt(x.s.mean)+"</td><td class='num'>"+x.s.d35+"</td><td class='num'>"+x.s.d9+"</td><td>"+x.s.worstDate+" · "+fmt(x.s.worst)+" µg/m³ <span class='pill' style='background:"+c[1]+";color:"+textColor(c[1])+"'>"+c[0]+"</span></td>"; tb.appendChild(tr); });
+    document.getElementById("histNote").textContent="Period "+hist.start+" to "+hist.end+" ("+hist.dates.length+" days). Daily values are means of 24 hourly model values; a day counts as over a threshold when its mean exceeds it. History file built "+hist.built.slice(0,10)+".";
+    document.getElementById("histHead").textContent="Since "+hist.start+": daily PM2.5 by community";
+  }
+  function renderPicks(){
+    var box=document.getElementById("picks"); box.innerHTML="";
+    hist.places.forEach(function(p,i){ var on=picked.indexOf(i), col=on>=0?SERIES[on]:"#c9d2d5"; var l=document.createElement("label"); l.innerHTML="<input type='checkbox' data-i='"+i+"' "+(on>=0?"checked":"")+"> <i style='background:"+col+"'></i>"+p.name; box.appendChild(l); });
+  }
+  document.getElementById("picks").addEventListener("change",function(e){ var i=+e.target.getAttribute("data-i"); var at=picked.indexOf(i); if(e.target.checked){ if(at<0){ if(picked.length>=6){ e.target.checked=false; warn("Up to six communities at a time."); return; } picked.push(i); } } else if(at>=0) picked.splice(at,1); renderPicks(); drawChart(); });
+
+  // ---- SVG line chart with crosshair -----------------------------------------
+  var svg=document.getElementById("chart"), tip=document.getElementById("tip"), NS="http://www.w3.org/2000/svg";
+  function el(n,attrs,text){ var e=document.createElementNS(NS,n); for(var k in attrs) e.setAttribute(k,attrs[k]); if(text!=null) e.textContent=text; return e; }
+  var geom=null;
+  function drawChart(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild); if(!hist||!picked.length){ geom=null; return; }
+    var W=svg.clientWidth||900, H=svg.clientHeight||320, m={t:14,r:118,b:34,l:44}, iw=W-m.l-m.r, ih=H-m.t-m.b, n=hist.dates.length;
+    var series=picked.map(function(i,k){ return {p:hist.places[i],col:SERIES[k]}; });
+    var ymax=0; series.forEach(function(s){ s.p.pm.forEach(function(v){ if(v!=null&&v>ymax) ymax=v; }); }); ymax=Math.max(12,Math.ceil(ymax/10)*10);
+    var x=function(i){ return m.l+i/(n-1)*iw; }, y=function(v){ return m.t+ih-(v/ymax)*ih; };
+    // gridlines + y labels
+    var ticks=5; for(var t=0;t<=ticks;t++){ var v=ymax*t/ticks, yy=y(v); svg.appendChild(el("line",{x1:m.l,x2:m.l+iw,y1:yy,y2:yy,stroke:"#e7edef","stroke-width":1})); svg.appendChild(el("text",{x:m.l-8,y:yy+4,"text-anchor":"end","font-size":11,fill:"#5b6b70"},Math.round(v))); }
+    // reference line at the 24-h standard
+    if(ymax>=35.5){ var ys=y(35.5); svg.appendChild(el("line",{x1:m.l,x2:m.l+iw,y1:ys,y2:ys,stroke:"#9aa7ab","stroke-width":1,"stroke-dasharray":"4 4"})); svg.appendChild(el("text",{x:m.l+4,y:ys-4,"font-size":11,fill:"#5b6b70"},"35.5 µg/m³ — unhealthy for sensitive groups (24-h)")); }
+    // x labels: first of each month
+    var lastLabelX=-1e9; for(var i=0;i<n;i++){ var d=hist.dates[i]; if(d.slice(8,10)==="01"||i===0){ var mo=new Date(d+"T00:00:00Z"); var lab=mo.toLocaleString("en-US",{month:"short",timeZone:"UTC"})+(d.slice(5,7)==="01"||i===0?" "+d.slice(0,4):""); svg.appendChild(el("line",{x1:x(i),x2:x(i),y1:m.t+ih,y2:m.t+ih+4,stroke:"#9aa7ab"})); if(x(i)-lastLabelX<46) continue; lastLabelX=x(i); svg.appendChild(el("text",{x:x(i),y:H-m.b+18,"text-anchor":i===0?"start":"middle","font-size":11,fill:"#5b6b70"},lab)); } }
+    svg.appendChild(el("text",{x:m.l,y:m.t-2,"font-size":11,fill:"#5b6b70"},"PM2.5, µg/m³ (daily mean)"));
+    // lines, then end labels pushed apart so they never overlap
+    var labels=[];
+    series.forEach(function(s){ var dstr="", last=null; for(var i=0;i<n;i++){ var v=s.p.pm[i]; if(v==null){ last=null; continue; } dstr+=(last==null?"M":"L")+x(i).toFixed(1)+" "+y(v).toFixed(1)+" "; last=v; }
+      svg.appendChild(el("path",{d:dstr,fill:"none",stroke:s.col,"stroke-width":2,"stroke-linejoin":"round","stroke-linecap":"round"}));
+      var li=n-1; while(li>0&&s.p.pm[li]==null) li--; if(s.p.pm[li]!=null) labels.push({x:x(li)+6,y:y(s.p.pm[li]),name:s.p.name.split(",")[0],col:s.col});
+    });
+    labels.sort(function(a,b){return a.y-b.y}); for(var k=1;k<labels.length;k++){ if(labels[k].y-labels[k-1].y<13) labels[k].y=labels[k-1].y+13; }
+    labels.forEach(function(l){ svg.appendChild(el("circle",{cx:l.x-6,cy:l.y,r:3,fill:l.col})); svg.appendChild(el("text",{x:l.x+2,y:l.y+4,"font-size":12,fill:"#172126"},l.name)); });
+    var cross=el("line",{x1:0,x2:0,y1:m.t,y2:m.t+ih,stroke:"#172126","stroke-width":1,opacity:0}); svg.appendChild(cross);
+    var dots=series.map(function(s){ var c=el("circle",{r:4,fill:s.col,stroke:"#fff","stroke-width":2,opacity:0}); svg.appendChild(c); return c; });
+    geom={x:x,y:y,n:n,series:series,cross:cross,dots:dots,m:m,iw:iw,W:W};
+  }
+  function hover(evt){
+    if(!geom) return; var rect=svg.getBoundingClientRect(); var px=(evt.touches?evt.touches[0].clientX:evt.clientX)-rect.left; var i=Math.round((px-geom.m.l)/geom.iw*(geom.n-1)); if(i<0||i>=geom.n){ leave(); return; }
+    var xx=geom.x(i); geom.cross.setAttribute("x1",xx); geom.cross.setAttribute("x2",xx); geom.cross.setAttribute("opacity",0.5);
+    var html="<b>"+hist.dates[i]+"</b>";
+    geom.series.forEach(function(s,k){ var v=s.p.pm[i]; var d=geom.dots[k]; if(v==null){ d.setAttribute("opacity",0); } else { d.setAttribute("cx",xx); d.setAttribute("cy",geom.y(v)); d.setAttribute("opacity",1); } html+="<span><span><i class='sw' style='background:"+s.col+"'></i>"+s.p.name.split(",")[0]+"</span><span>"+fmt(v)+"</span></span>"; });
+    tip.innerHTML=html; tip.style.display="block"; var wrap=svg.parentNode.getBoundingClientRect(); var left=xx+14; if(left+tip.offsetWidth>wrap.width-8) left=xx-tip.offsetWidth-14; tip.style.left=left+"px"; tip.style.top="12px";
+  }
+  function leave(){ if(!geom) return; geom.cross.setAttribute("opacity",0); geom.dots.forEach(function(d){d.setAttribute("opacity",0)}); tip.style.display="none"; }
+  svg.addEventListener("mousemove",hover); svg.addEventListener("touchstart",hover,{passive:true}); svg.addEventListener("touchmove",hover,{passive:true}); svg.addEventListener("mouseleave",leave);
+  window.addEventListener("resize",function(){ drawChart(); });
+
+  function loadHistory(){
+    var sc=document.createElement("script"); var d=new Date(); sc.src="history.js?d="+d.getFullYear()+(d.getMonth()+1)+d.getDate();
+    sc.onload=function(){ var h=window.QE_HISTORY; if(!h||!h.dates){ sc.onerror(); return; }
+      hist=h; dayIdx=h.dates.length-1;
+      var sl=document.getElementById("daySlider"); sl.max=h.dates.length-1; sl.value=dayIdx; sl.addEventListener("input",function(){ dayIdx=+sl.value; drawHistGrid(); drawPlaces(); });
+      var ranked=h.places.map(function(p,i){ return {i:i,s:stats(p)}; }).filter(function(x){return x.s}).sort(function(a,b){return b.s.mean-a.s.mean;});
+      picked=ranked.slice(0,3).map(function(x){return x.i});
+      renderPicks(); renderHistTable(); drawChart();
+      document.getElementById("history").style.display="block";
+      var mb=document.getElementById("modeHist"); mb.disabled=false; mb.title="Day-by-day since "+h.start;
+    };
+    sc.onerror=function(){ var mb=document.getElementById("modeHist"); mb.title="History file not uploaded yet"; };
+    document.body.appendChild(sc);
+  }
+  document.getElementById("modeLive").addEventListener("click",function(){ setMode("live"); });
+  document.getElementById("modeHist").addEventListener("click",function(){ setMode("hist"); });
+
+  // ---- EPA AirNow monitors (second source; served by airnow.php) ----------
+  var monLayer=L.layerGroup(); var monitors=[];
+  function loadMonitors(){
+    return fetch("airnow.php",{cache:"no-cache"}).then(function(r){return r.json()}).then(function(j){
+      if(!j||!j.ok||!j.sites||!j.sites.length) return;
+      monitors=j.sites;
+      monitors.forEach(function(m){ var a=(m.pm25!=null)?m.pm25:m.o3; if(a==null) return; var c=cat(a);
+        L.circleMarker([m.lat,m.lon],{radius:3.5,color:"#333",weight:0.8,fillColor:c[1],fillOpacity:0.9})
+          .bindPopup("<b>"+(m.name||"Monitor")+"</b><br><span class='small'>"+(m.agency||"EPA AirNow")+"</span><br>PM2.5 AQI "+(m.pm25!=null?m.pm25:"–")+" · Ozone AQI "+(m.o3!=null?m.o3:"–")+"<br><span class='small'>Observed "+m.utc.replace("T"," ")+" UTC · sensor reading</span>").addTo(monLayer); });
+      document.getElementById("monCount").textContent=monitors.length; document.getElementById("monNote").style.display="block";
+      if(document.getElementById("monToggle").checked&&mode==="live") monLayer.addTo(map);
+      monNote=" · sensors: EPA AirNow ("+monitors.length+" monitors)"; if(/^Live ·/.test(statusEl.textContent)) statusEl.innerHTML+=monNote;
+      drawPlaces();
+    }).catch(function(){});
+  }
+  document.getElementById("monToggle").addEventListener("change",function(e){ if(e.target.checked&&mode==="live") monLayer.addTo(map); else map.removeLayer(monLayer); });
+  function nearestMonitor(lat,lon){ var best=null,bd=1e9; for(var i=0;i<monitors.length;i++){ var m=monitors[i]; if(m.pm25==null) continue; var dy=(m.lat-lat)*111, dx=(m.lon-lon)*111*Math.cos(lat*Math.PI/180); var d=Math.sqrt(dx*dx+dy*dy); if(d<bd){bd=d;best=m;} } return best?{m:best,km:bd}:null; }
+
+  // ---- Boot -----------------------------------------------------------------
+  rows=(PLACES.volunteer||[]).map(function(t){return {name:t[0],lat:t[1],lon:t[2],kind:"volunteer"}})
+    .concat((PLACES.reference||[]).map(function(t){return {name:t[0],lat:t[1],lon:t[2],kind:"reference"}}))
+    .concat(userTowns().map(function(t){return {name:t.name,lat:t.lat,lon:t.lon,kind:"user"}}));
+  loadPlaces(rows).then(drawPlaces).catch(function(e){ warn("Live data is unavailable right now ("+(e.message||e)+"). The map still works; numbers will appear when the data service is reachable."); statusEl.textContent="Live data unavailable"; drawPlaces(); });
+  drawLiveGrid().catch(function(){ warn("The regional grid could not be loaded right now; community markers may still be live."); });
+  loadHistory();
+  loadMonitors();
+})();
+</script>
+</body>
+</html>
